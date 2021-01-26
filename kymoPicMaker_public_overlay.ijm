@@ -10,7 +10,7 @@ roiManager("Associate", "true");
 fPath=getInfo("image.directory"); //where is it?
 fName=getInfo("image.filename");
 imList=getList("image.titles");
-fPref=split(imList[0],".");
+fPref=split(fName,".");
 fPref=fPref[0];
 getPixelSize(unit, pixelWidth, pixelHeight);
 getDimensions(width, height, channels, slices, frames);
@@ -23,6 +23,7 @@ projList = newArray("[Sum Slices]","[Max Intensity]","[Min Intensity]","[Average
 
 //Close every window except the original
 close("\\Others")
+imList=getList("image.titles");
 
 //Create a dialog box that controls parameters
 run("Set Measurements...", "mean centroid fit redirect=None decimal=3");
@@ -35,23 +36,23 @@ if (sInit > 1){ //whihc z slices do we include?
 	Dialog.addChoice("Projection Type", projList, "[Max Intensity]");
 }
 
-if (cInit > 1){
+/*if (cInit > 1){
 	Dialog.addNumber("Channel to kymograph: ", 1); //if there's >1 channel, which to keep
-}
+}*/
 Dialog.addNumber("Band Width: ", 30); //how wide is each slice of the kymograph going to be?
 Dialog.addNumber("Scale factor (0.85-1.0): ", 1); // What reduction of scale in the final kymograph?
 Dialog.addCheckbox("Saved Kymo Lines", false); // Do kymo lines exist already?
 Dialog.show();
 t1=Dialog.getNumber();
 t2=Dialog.getNumber();
-if (sInit > 1){ //whihc z slices do we include?
+if (sInit > 1){ //which z slices do we include?
 	z1 = Dialog.getNumber(); //When does the kymograph start...
 	z2 = Dialog.getNumber();//... and end
 	projType = Dialog.getChoice();
 }
-if (cInit > 1){
+/*if (cInit > 1){
 	dataChannel = Dialog.getNumber(); //if there's >1 channel, which to keep
-}
+}*/
 bandWidth=Dialog.getNumber();
 hBandWidth = bandWidth/2;
 scaleF=Dialog.getNumber();
@@ -59,11 +60,11 @@ roiState = Dialog.getCheckbox(); //do rois exist for this embryo?
 
 roiManager("reset"); //delete existing ROIs
 
-if (cInit > 1){
-	run("Duplicate...", "duplicate channels="+dataChannel+" slices="+z1+"-"+z2+" frames="+t1+"-"+t2);
-}else{
+//if (cInit > 1){
+//	run("Duplicate...", "duplicate channels="+dataChannel+" slices="+z1+"-"+z2+" frames="+t1+"-"+t2);
+//}else{
 	run("Duplicate...", "duplicate slices="+z1+"-"+z2+" frames="+t1+"-"+t2);
-}
+//}
 
 
 rename("Substack");
@@ -80,12 +81,13 @@ if (sInit > 1){ //which z slices do we include?
 	selectWindow("Temp");
 	rename("Substack");
 }
-
+Stack.setDisplayMode("composite");
 if (roiState == true || roiState ==1){
 	roiManager("Open",fPath+fPref+"_kymoLines.zip");
 }
 else{
 	setTool("Line");
+	frames=8;
 	for (f=1;f<=frames;f++){
 		Stack.setFrame(f);
 		waitForUser("Draw a line along which you want to plot a kymo");
@@ -112,7 +114,7 @@ hLineLength = round(lineLength/2);
 for (roi = 0; roi<roiManager("count");roi++){
 	selectWindow("Substack");
 	Stack.setFrame(roi+1);
-	run("Duplicate...", " ");
+	run("Duplicate...", "duplicate frames="+roi+1);
 	roiManager("Select",roi);
 	Roi.setStrokeWidth(bandWidth);
 	roiManager("update");
@@ -129,17 +131,19 @@ for (roi = 0; roi<roiManager("count");roi++){
 	getDimensions(width, height, channels, slices, frames);
 	makeRectangle(floor(width/2)-hLineLength, floor(height/2)-hBandWidth, lineLength, bandWidth);
 	run("Crop");
-
+	run("Split Channels");
 }
 
 imList=getList("image.titles");
+q=t2-t1+1;
 run("Images to Stack", "method=[Copy (center)] name=Stack title=[] use");
-q=nSlices;
+run("Stack to Hyperstack...", "order=xyczt(default) channels="+cInit+" slices=1 frames="+q+" display=Composite");
+
 run("Make Montage...", "columns=1 rows="+q+" scale=1");
 
 if (cInit > 1){
-	saveAs(fPath+fPref+"_c"+dataChannel+"_kymo.tif");
+	saveAs(fPath+fPref+"_merged_kymo.tif");
 }else{
-	saveAs(fPath+fPref+"_c1_kymo.tif");
+	saveAs(fPath+fPref+"_kymo.tif");
 }
 

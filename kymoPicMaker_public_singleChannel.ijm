@@ -10,7 +10,7 @@ roiManager("Associate", "true");
 fPath=getInfo("image.directory"); //where is it?
 fName=getInfo("image.filename");
 imList=getList("image.titles");
-fPref=split(fName,".");
+fPref=split(imList[0],".");
 fPref=fPref[0];
 getPixelSize(unit, pixelWidth, pixelHeight);
 getDimensions(width, height, channels, slices, frames);

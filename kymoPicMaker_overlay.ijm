@@ -87,7 +87,6 @@ if (roiState == true || roiState ==1){
 }
 else{
 	setTool("Line");
-	frames=8;
 	for (f=1;f<=frames;f++){
 		Stack.setFrame(f);
 		waitForUser("Draw a line along which you want to plot a kymo");
